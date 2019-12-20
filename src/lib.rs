@@ -1,8 +1,15 @@
+//! Provides a thin wrapper over `Rc<RefCell<T>>` for higher ergonomics, as managing nested types
+//! gets annoying.
+
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::fmt::{Pointer, Formatter, Result as FmtResult, Display, Error as FmtError};
 use std::ops::Deref;
 
+/// The main attraction. Equivalent to `Rc<RefCell<T>>` but with one fewer type. `Rc` methods are
+/// reimplemented, and `RefCell` methods are gained by its `Deref` implementation.
+///
+/// All undocumented methods are equivalent to the `Rc` function of identical name.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct RcCell<T>(Rc<RefCell<T>>);
 
@@ -13,8 +20,8 @@ impl<T> RcCell<T> {
     pub fn try_unwrap(this: Self) -> Result<T, Self> {
         Rc::try_unwrap(this.0).map(RefCell::into_inner).map_err(Self)
     }
-    pub fn downgrade(this: &Self) -> RcCellWeak<T> {
-        RcCellWeak(Rc::downgrade(&this.0))
+    pub fn downgrade(&self) -> RcCellWeak<T> {
+        RcCellWeak(Rc::downgrade(&self.0))
     }
     pub fn weak_count(&self) -> usize {
         Rc::weak_count(&self.0)
@@ -25,6 +32,7 @@ impl<T> RcCell<T> {
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.0, &other.0)
     }
+    /// Like `swap`, but with another `RcCell` instead of a `RefCell`.
     pub fn swap_with(&self, other: &Self) {
         self.swap(&other.0)
     }
@@ -62,6 +70,9 @@ impl<T> Display for RcCell<T> where T: Display {
     }
 }
 
+/// Equivalent to `Weak<RefCell<T>>` but with one fewer type.
+///
+/// All undocumented methods are equivalent to the `Rc` function of identical name.
 #[derive(Debug, Default, Clone)]
 pub struct RcCellWeak<T>(Weak<RefCell<T>>);
 
@@ -74,5 +85,19 @@ impl<T> RcCellWeak<T> {
     }
     pub fn ptr_eq(&self, other: &Self) -> bool {
         self.0.ptr_eq(&other.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::RcCell;
+
+    #[test]
+    fn basic_test() {
+        let cell = RcCell::new("test");
+        let cell2 = cell.clone();
+        assert_eq!(cell.strong_count(), 2);
+        std::mem::drop(cell2);
+        assert_eq!(cell.strong_count(), 1);
     }
 }
