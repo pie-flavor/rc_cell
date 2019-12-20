@@ -8,6 +8,7 @@ categories = ["memory-management"]
 keywords = ["cell", "rc", "refcell"]
 homepage = "https://github.com/pie-flavor/rc_cell"
 repository = "https://github.com/pie-flavor/rc_cell.git"
+description = "A simple wrapper around Rc<RefCell<T>>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
